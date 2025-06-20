@@ -1,0 +1,36 @@
+# Ignorar la carpeta del entorno virtual
+venv/
+.venv/
+env/
+
+# Archivos de Python generados
+__pycache__/
+*.pyc
+*.pyd
+*.egg-info/
+.pytest_cache/
+
+# Archivos de registro y bases de datos (si no son parte del control de versiones)
+*.log
+*.sqlite3
+*.db
+
+# Variables de entorno (si usas un archivo .env para credenciales)
+.env
+
+# Archivos específicos del sistema operativo
+.DS_Store # macOS
+Thumbs.db # Windows
+
+# Archivos de editor de texto y IDE (ej: VS Code)
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Archivos de paquetes de distribución
+dist/
+build/
+*.egg
+
+# Directorios de módulos de Pip
+pip-wheel-metadata/
