@@ -15,9 +15,9 @@ load_dotenv()
 app = Flask(__name__)
 port = os.getenv('PORT', 8080) # Usa PORT desde .env o por defecto 8080
 
-# Obtiene la URL de la API de FastAPI desde las variables de entorno
-FASTAPI_API_URL = os.getenv('FASTAPI_LANGCHAIN_API_URL')
-print(f"Webhook configurado para llamar a la API de FastAPI en: {FASTAPI_API_URL}")
+# Obtiene la URL de la API de Flask API desde las variables de entorno
+FLASK_API_URL = os.getenv('FLASK_LANGCHAIN_API_URL')
+print(f"Webhook configurado para llamar a la API de FLASK en: {FLASK_API_URL}")
 
 # --- Ruta raíz para servir index.html ---
 @app.route('/', methods=['GET'])
@@ -113,22 +113,22 @@ def webhook():
         else:
             set_fulfillment_text(dialogflow_response, '¡Hola! Es un placer saludarte desde el webhook de Flask.')
 
-    # --- Función ASÍNCRONA para Llamar a la API del Agente Python (FastAPI) ---
+    # --- Función ASÍNCRONA para Llamar a la API del Agente Python (Flask) ---
     async def langchain_agent():
-        """Llama a un agente FastAPI/Flask externo y popula dialogflow_response."""
+        """Llama a un agente Flask externo y popula dialogflow_response."""
         print(f"Intent para Agente LangChain activado. Pregunta del usuario: \"{user_query}\"")
         # Convierte los parámetros protobuf a un diccionario Python estándar para la API externa
         dialogflow_parameters_dict = dict(parameters)
         print("Parámetros de Dialogflow (para API externa):", json.dumps(dialogflow_parameters_dict, indent=2))
 
-        if not FASTAPI_API_URL:
-            print("ERROR: FASTAPI_LANGCHAIN_API_URL no está configurada en .env")
+        if not FLASK_API_URL:
+            print("ERROR: FLASK_LANGCHAIN_API_URL no está configurada en .env")
             set_fulfillment_text(dialogflow_response, "Lo siento, aún no tenemos información disponible.")
             return
 
         try:
             response = requests.post(
-                FASTAPI_API_URL,
+                FLASK_API_URL,
                 json={
                     "query": user_query,
                     "parameters": dialogflow_parameters_dict # Envía como diccionario regular
@@ -143,15 +143,15 @@ def webhook():
 
             if api_response and isinstance(api_response.get('answer'), str) and len(api_response.get('answer')) > 0:
                 set_fulfillment_text(dialogflow_response, api_response['answer'])
-                print("Respuesta de la API de FastAPI enviada a Dialogflow:", api_response['answer'])
+                print("Respuesta de la API de Flask enviada a Dialogflow:", api_response['answer'])
             else:
                 set_fulfillment_text(dialogflow_response, "No pude obtener una respuesta clara del sistema de información. ¿Podrías intentar de otra forma?")
-                print(f"La API de FastAPI no devolvió la clave 'answer' esperada o está vacía: {api_response}")
+                print(f"La API de Flask no devolvió la clave 'answer' esperada o está vacía: {api_response}")
 
         except requests.exceptions.RequestException as e:
-            print(f"Error al llamar a la API de FastAPI: {e}")
+            print(f"Error al llamar a la API de Flask: {e}")
             if e.response:
-                print(f"Respuesta de error de Flask/FastAPI: {e.response.text}")
+                print(f"Respuesta de error de Flask: {e.response.text}")
                 if e.response.status_code == 404:
                     set_fulfillment_text(dialogflow_response, "Lo siento, no pude conectar con el servicio de información (error 404). Asegúrate de que la URL sea correcta y el servicio esté en línea.")
                 elif e.response.status_code == 500:
@@ -192,4 +192,4 @@ if __name__ == '__main__':
     # Cuando se ejecuta localmente, asegúrate de que 'index.html' esté en el mismo directorio.
     app.run(host='0.0.0.0', port=port, debug=True) # debug=True para desarrollo, False en producción
     print(f"Servidor corriendo en http://localhost:{port}")
-    print(f"URL del Agente Python Flask: {FASTAPI_API_URL}")
+    print(f"URL del Agente Python Flask: {FLASK_API_URL}")
