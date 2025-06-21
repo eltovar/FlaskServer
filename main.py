@@ -1,4 +1,3 @@
-
 import os
 import json
 import asyncio
@@ -9,7 +8,7 @@ import requests
 
 # Importa los módulos necesarios de google-cloud-dialogflow
 from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse
-from google.protobuf.json_format import ParseDict, MessageToJson
+from google.protobuf.json_format import MessageToJson
 
 # Carga las variables de entorno desde el archivo .env
 load_dotenv()
@@ -181,5 +180,5 @@ if __name__ == '__main__':
     # En producción (Railway), Railway se encarga de la ejecución y el manejo de puertos.
     # La variable PORT es inyectada por Railway.
     app.run(host='0.0.0.0', port=int(port), debug=True) # debug=True para desarrollo, False en producción
-    print(f"Servidor Flask corriendo en http://0.0.0.0:{port}")
+    print(f"Servidor Flask corriendo en http://localhost:{port}")
     print(f"URL del Agente IA Externo: {FLASK_API_URL}")
