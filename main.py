@@ -61,9 +61,9 @@ def webhook():
     def set_fulfillment_text(text):
         response_data["fulfillmentText"] = text
 
-    def add_fulfillment_message(text):
+    #def add_fulfillment_message(text):
         # Dialogflow puede aceptar múltiples mensajes de texto en fulfillmentMessages
-        response_data["fulfillmentMessages"].append({"text": {"text": [text]}})
+    #   response_data["fulfillmentMessages"].append({"text": {"text": [text]}})
 
     def welcome():
         print("Intent 'Default Welcome Intent' activado.")
