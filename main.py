@@ -1,15 +1,11 @@
 import os
 import json
-import asyncio
+import asyncio # Necesario para ejecutar funciones asíncronas
 from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
-import requests
-  # Necesario para ejecutar funciones asíncronas
+import requests 
 
-# Importa los módulos necesarios de google-cloud-dialogflow
-from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse
-from google.protobuf.json_format import MessageToJson
-
+# Importa los módulos necesarios de Flask y dotenv
 # Carga las variables de entorno desde el archivo .env
 load_dotenv()
 
