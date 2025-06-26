@@ -7,10 +7,9 @@ import requests
 
 
 # Importa los módulos necesarios de Flask y dotenv
-from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse, Message
-from google.cloud.dialogflow_v2.types.response import Text
+from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse, Message, Text
 from google.protobuf.json_format import ParseDict, MessageToJson
-from google.protobuf.struct_pb2 import Struct # Necesario para custom payloads como los de Facebook
+from google.protobuf.struct_pb2 import Struct  # Necesario para custom payloads como los de Facebook
 
 # Carga las variables de entorno desde el archivo .env
 load_dotenv()
