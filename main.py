@@ -8,10 +8,15 @@ import requests
 
 # Importa los módulos necesarios de Flask y dotenv
 from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse
-# Se importan Text y Message directamente desde el módulo protobuf subyacente
-from google.cloud.dialogflow_v2.proto import dialogflow_pb2 as df_pb2 # Alias para mayor claridad
+
+# Importación alternativa para los mensajes protobuf como Text y Message
+# Se usa la ubicación directa de los módulos protobuf generados
+import dialogflow_v2.gapic.enums as enums # Si necesitas enumeraciones, aunque no se usa aquí directamente
+import dialogflow_v2.proto.fulfillment_pb2 as fulfillment_pb2 # Para Message, Text, etc.
+import dialogflow_v2.proto.struct_pb2 as struct_pb2 # Para Struct
+import dialogflow_v2.proto.session_pb2 as session_pb2 # Para Contextos (aunque se manejan por nombre)
+
 from google.protobuf.json_format import ParseDict, MessageToJson
-from google.protobuf.struct_pb2 import Struct  # Necesario para custom payloads como los de Facebook
 
 # Carga las variables de entorno desde el archivo .env
 load_dotenv()
