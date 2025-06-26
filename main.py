@@ -7,7 +7,8 @@ import requests
 
 
 # Importa los módulos necesarios de Flask y dotenv
-from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse, Text, Message
+from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse, Message
+from google.cloud.dialogflow_v2.types.response import Text
 from google.protobuf.json_format import ParseDict, MessageToJson
 from google.protobuf.struct_pb2 import Struct # Necesario para custom payloads como los de Facebook
 
@@ -83,9 +84,9 @@ def webhook():
     def set_fulfillment_text(response_obj, text):
         response_obj.fulfillment_text = text
 
-    def add_fulfillment_message(response_obj, text):
+    def add_fulfillment_message(response_obj, text_content):
         # Dialogflow puede aceptar múltiples mensajes de texto en fulfillmentMessages
-        response_obj.fulfillment_messages.append(Message(text=Text(text=[text])))
+        response_obj.fulfillment_messages.append(Message(text=Text(text=[text_content])))
        
     def add_custom_payload(response_obj, payload_dict):
         """
@@ -102,7 +103,7 @@ def webhook():
 
     def set_output_context(response_obj, session_path, context_name, lifespan_count=5):
         """Helper para establecer contextos de salida."""
-        response_obj.output_contexts.append(
+        response_obj.output_contexts.append(        
             f"{session_path}/contexts/{context_name}"
         )
         # Nota: La librería de Dialogflow v2 (protobufs) no tiene lifespan_count directo en set_output_context.
@@ -316,6 +317,6 @@ if __name__ == '__main__':
     # Cuando se ejecuta localmente, asegura que 'index.html' esté en el mismo directorio.
     # En producción (Railway), Railway se encarga de la ejecución y el manejo de puertos.
     # La variable PORT es inyectada por Railway.
-    app.run(host='0.0.0.0', port=int(port), debug=True) # debug=True para desarrollo, False en producción
+    app.run(host='0.0.0.0', port=(port), debug=True) # debug=True para desarrollo, False en producción
     print(f"Servidor Flask corriendo en http://localhost:{port}")
     print(f"URL del Agente IA Externo: {FLASK_API_URL}")
