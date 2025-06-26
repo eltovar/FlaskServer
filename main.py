@@ -7,7 +7,9 @@ import requests
 
 
 # Importa los módulos necesarios de Flask y dotenv
-from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse, Message, Text
+from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse
+# Se importan Text y Message directamente desde el módulo protobuf subyacente
+from google.cloud.dialogflow_v2.proto import dialogflow_pb2 as df_pb2 # Alias para mayor claridad
 from google.protobuf.json_format import ParseDict, MessageToJson
 from google.protobuf.struct_pb2 import Struct  # Necesario para custom payloads como los de Facebook
 
@@ -85,7 +87,7 @@ def webhook():
 
     def add_fulfillment_message(response_obj, text_content):
         # Dialogflow puede aceptar múltiples mensajes de texto en fulfillmentMessages
-        response_obj.fulfillment_messages.append(Message(text=Text(text=[text_content])))
+        response_obj.fulfillment_messages.append(df_pb2.Message(text=df_pb2.Text(text=[text_content])))
        
     def add_custom_payload(response_obj, payload_dict):
         """
@@ -95,7 +97,7 @@ def webhook():
         """
         try:
             payload_struct = ParseDict(payload_dict, Struct())
-            response_obj.fulfillment_messages.append(Message(payload=payload_struct))
+            response_obj.fulfillment_messages.append(df_pb2.Message(payload=payload_struct))
         except Exception as e:
             print(f"Error al crear el custom payload: {e}")
             add_fulfillment_message(response_obj, "Lo siento, hubo un problema al generar las opciones de menú.")
