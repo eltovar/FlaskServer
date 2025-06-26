@@ -15,7 +15,7 @@ from google.protobuf.struct_pb2 import Struct  # Necesario para custom payloads 
 load_dotenv()
 
 app = Flask(__name__)
-port = os.getenv('PORT') # Usa PORT desde .env o por defecto 8080
+port = os.getenv('PORT', 8080) # Usa PORT desde .env o por defecto 8080
 
 # Obtiene la URL de la API de Flask API desde las variables de entorno
 FLASK_API_URL = os.getenv('FLASK_LANGCHAIN_API_URL')
