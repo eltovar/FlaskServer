@@ -3,20 +3,19 @@ import json
 import asyncio # Necesario para ejecutar funciones asíncronas
 from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
-import requests 
+import requests
 
-
-# Importa los módulos necesarios de Flask y dotenv
-from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse, Message
-from google.cloud.dialogflow_v2.types.response import Text
+# Importa los módulos necesarios de google-cloud-dialogflow
+# Con protobuf en una versión compatible, Text y Message deberían estar aquí
+from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse, Message, Text
 from google.protobuf.json_format import ParseDict, MessageToJson
-from google.protobuf.struct_pb2 import Struct # Necesario para custom payloads como los de Facebook
+from google.protobuf.struct_pb2 import Struct # Este siempre debería estar aquí
 
 # Carga las variables de entorno desde el archivo .env
 load_dotenv()
 
 app = Flask(__name__)
-port = os.getenv('PORT') # Usa PORT desde .env o por defecto 8080
+port = os.getenv('PORT', 8080) # Usa PORT desde .env o por defecto 8080
 
 # Obtiene la URL de la API de Flask API desde las variables de entorno
 FLASK_API_URL = os.getenv('FLASK_LANGCHAIN_API_URL')
@@ -49,9 +48,7 @@ def webhook():
         return jsonify({"fulfillmentText": "Error interno al procesar la solicitud."}), 400
 
 
-    # Parsea la petición JSON entrante en un objeto WebhookRequest
     dialogflow_response = WebhookResponse()
-    #dialogflow_request =  WebhookRequest()
     
     # Esto aprovecha los tipos oficiales de Dialogflow para un acceso estructurado
     query_result = dialogflow_request.query_result
@@ -59,35 +56,20 @@ def webhook():
     parameters = query_result.parameters
     intent_display_name = query_result.intent.display_name
     
-    #user_query = query_result.get('queryText', '')
-    #parameters = query_result.get('parameters', {})
-    #intent_display_name = query_result.get('intent', {}).get('displayName', '')
-
-
     print(f"Intent activado: {intent_display_name}")
     print(f"Pregunta del Usuario: {user_query}")
     print(f"Parámetros: {dict(parameters)}")
 
-    # Objeto de respuesta que enviaremos de vuelta a Dialogflow
-    # Por defecto, Dialogflow espera un JSON con 'fulfillmentText' o 'fulfillmentMessages'.
-    # Construimos un diccionario simple y luego lo convertimos a JSON con jsonify.
-    
-    #response_data = {
-     #   "fulfillmentText": "",
-     #   "fulfillmentMessages": []
-    #}
-
     # --- Funciones de Manejo de Intents ---
-    # Estas funciones ahora modificarán directamente el diccionario `response_data`.
-
-#Funciones auxiliares para manejar la respuesta de Dialogflow
-    def set_fulfillment_text(response_obj, text):
-        response_obj.fulfillment_text = text
+    
+    #Funciones auxiliares para manejar la respuesta de Dialogflow
+    def set_fulfillment_text(response_obj, text_content): # Renombrado para claridad
+        response_obj.fulfillment_text = text_content
 
     def add_fulfillment_message(response_obj, text_content):
         # Dialogflow puede aceptar múltiples mensajes de texto en fulfillmentMessages
         response_obj.fulfillment_messages.append(Message(text=Text(text=[text_content])))
-       
+        
     def add_custom_payload(response_obj, payload_dict):
         """
         Añade un payload personalizado a la respuesta de Dialogflow.
@@ -103,12 +85,9 @@ def webhook():
 
     def set_output_context(response_obj, session_path, context_name, lifespan_count=5):
         """Helper para establecer contextos de salida."""
-        response_obj.output_contexts.append(        
+        response_obj.output_contexts.append(      
             f"{session_path}/contexts/{context_name}"
         )
-        # Nota: La librería de Dialogflow v2 (protobufs) no tiene lifespan_count directo en set_output_context.
-        # Si necesitas controlar el lifespan, deberías construir el `Context` object completo.
-        # Para limpiar contextos, se usa "?lifespan_count=0" en el nombre del contexto, como se muestra abajo.
 
     def clear_output_context(response_obj, session_path, context_name):
         """Helper para limpiar contextos de salida."""
@@ -200,23 +179,20 @@ def webhook():
     def email_notification_handler():
         """Maneja las opciones que requieren notificación por email."""
         print("Intent 'EmailNotification_Intent' activado.")
-        # El user_query contendrá el texto del botón clickeado o el payload si se configura así en Dialogflow
         selected_option_text = user_query 
 
         topic_map = {
             "Reservas": "reservas",
             "Tarifas": "tarifas",
             "Ubicación": "ubicación",
-            "RESERVATIONS_PAYLOAD": "reservas", # Si el payload llega como query_text
+            "RESERVATIONS_PAYLOAD": "reservas",
             "RATES_PAYLOAD": "tarifas",
             "LOCATION_PAYLOAD": "ubicación"
         }
         topic = topic_map.get(selected_option_text, "información general")
 
         set_fulfillment_text(dialogflow_response, f"Recibido. Te enviaremos información sobre {topic} a tu correo electrónico registrado. ¡Gracias!")
-        # Placeholder para la lógica de notificación por email
         print(f"DEBUG: Se debería enviar un correo electrónico sobre {topic}.")
-        # Limpia el contexto del menú de opciones de glamping
         clear_output_context(dialogflow_response, dialogflow_request.session, "glamping_options_menu_active")
 
     def send_to_web_handler():
@@ -224,11 +200,7 @@ def webhook():
         print("Intent 'SendToWeb_Intent' activado.")
         set_fulfillment_text(dialogflow_response, "Puedes encontrar más información detallada en nuestra página web:")
         add_fulfillment_message(dialogflow_response, "Visita: https://www.ejemplo-glamping.com")
-        # Limpia el contexto del menú principal
         clear_output_context(dialogflow_response, dialogflow_request.session, "main_menu_active")
-
-            
-        
 
     # -- Función ASÍNCRONA para Llamar a la API del Agente IA (FLASK) ---
     async def langchain_agent():
@@ -268,7 +240,7 @@ def webhook():
             if e.response:
                 print(f"Respuesta de error de Flask/FastAPI: {e.response.text}")
                 if e.response.status_code == 404:
-                    set_fulfillment_text(dialogflow_response, "Lo siento, no pude conectar con el servicio de información (error 404). Asegúrate de que la URL sea correcta y el servicio esté en línea.")
+                    set_fulfillment_text(dialogflow_response, "Lo siento, no pude conectar con el servicio de información (error 404). Asegúrate de que la URL sea correcta y y el servicio esté en línea.")
                 elif e.response.status_code == 500:
                     set_fulfillment_text(dialogflow_response, "Hubo un error interno en el servicio de información. Por favor, intenta de nuevo o contacta al soporte.")
                 else:
@@ -283,7 +255,7 @@ def webhook():
         'Default Fallback Intent': fallback,
         'WebhookPrueba': webhook_prueba,
         'decirHola': decir_hola,
-        'Main Menu': main_menu_handler,
+        'Primer Menu': main_menu_handler,
         'Glamping Options Menu': glamping_options_menu_handler,
         'Ask AI Agent Trigger': ask_ai_agent_handler,
         'EmailNotification_Intent': email_notification_handler,
@@ -295,13 +267,7 @@ def webhook():
     handler = intent_map.get(intent_display_name)
 
     if handler:
-        # Si el manejador es una función asíncrona, ejecútala usando asyncio
-        # Esto es importante para funciones que hacen llamadas a APIs externas (requests.post es síncrono, pero se usa en una función async)
-        # requests es síncrono, por lo que el uso de asyncio.run() aquí no hará que la llamada a requests sea asíncrona.
-        # Para verdaderas operaciones asíncronas, se usaría aiohttp o httpx con async/await.
-        # Sin embargo, mantener la estructura async para 'langchain_agent' está bien si en el futuro planeas usar librerías async.
-        # Por ahora, asyncio.run() simplemente bloquea el hilo hasta que la función síncrona (requests.post) termina.
-        if asyncio.iscoroutinefunction(handler): # Mejor verificación para funciones coroutine
+        if asyncio.iscoroutinefunction(handler):
             asyncio.run(handler())
         else:
             handler()
@@ -314,9 +280,7 @@ def webhook():
 
 # --- Inicia el servidor de Flask ---
 if __name__ == '__main__':
-    # Cuando se ejecuta localmente, asegura que 'index.html' esté en el mismo directorio.
-    # En producción (Railway), Railway se encarga de la ejecución y el manejo de puertos.
-    # La variable PORT es inyectada por Railway.
-    app.run(host='0.0.0.0', port=(port), debug=True) # debug=True para desarrollo, False en producción
+    app.run(host='0.0.0.0', port=(port), debug=True)
     print(f"Servidor Flask corriendo en http://localhost:{port}")
     print(f"URL del Agente IA Externo: {FLASK_API_URL}")
+
