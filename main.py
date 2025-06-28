@@ -5,13 +5,13 @@ from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 import requests
 
-<<<<<<< HEAD
+
 # Importa los módulos necesarios de google-cloud-dialogflow
 # Con protobuf en una versión compatible, Text y Message deberían estar aquí
 from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse, Message, Text
 from google.protobuf.json_format import ParseDict, MessageToJson
 from google.protobuf.struct_pb2 import Struct # Este siempre debería estar aquí
-=======
+
 
 # Importa los módulos necesarios de Flask y dotenv
 from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse
@@ -24,7 +24,7 @@ import dialogflow_v2.proto.struct_pb2 as struct_pb2 # Para Struct
 import dialogflow_v2.proto.session_pb2 as session_pb2 # Para Contextos (aunque se manejan por nombre)
 
 from google.protobuf.json_format import ParseDict, MessageToJson
->>>>>>> 814e86ab3e2bfc920bd2a2cd8ab59d6bb1cf9582
+
 
 # Carga las variables de entorno desde el archivo .env
 load_dotenv()
@@ -83,13 +83,13 @@ def webhook():
 
     def add_fulfillment_message(response_obj, text_content):
         # Dialogflow puede aceptar múltiples mensajes de texto en fulfillmentMessages
-<<<<<<< HEAD
+
         response_obj.fulfillment_messages.append(Message(text=Text(text=[text_content])))
         
-=======
+
         response_obj.fulfillment_messages.append(df_pb2.Message(text=df_pb2.Text(text=[text_content])))
        
->>>>>>> 814e86ab3e2bfc920bd2a2cd8ab59d6bb1cf9582
+
     def add_custom_payload(response_obj, payload_dict):
         """
         Añade un payload personalizado a la respuesta de Dialogflow.
