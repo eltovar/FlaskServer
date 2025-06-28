@@ -6,10 +6,13 @@ from dotenv import load_dotenv
 import requests
 
 # Importa los módulos necesarios de google-cloud-dialogflow
-# Con protobuf en una versión compatible, Text y Message deberían estar aquí
-from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse, Message, Text
+# Solo importamos WebhookRequest y WebhookResponse, que son consistentes
+from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse
+#from google.cloud.dialogflow_v2 import Text, Message
+
+# Struct sigue siendo necesario para los custom payloads
 from google.protobuf.json_format import ParseDict, MessageToJson
-from google.protobuf.struct_pb2 import Struct # Este siempre debería estar aquí
+from google.protobuf.struct_pb2 import Struct 
 
 # Carga las variables de entorno desde el archivo .env
 load_dotenv()
@@ -51,6 +54,7 @@ def webhook():
     dialogflow_response = WebhookResponse()
     
     # Esto aprovecha los tipos oficiales de Dialogflow para un acceso estructurado
+    # Estas líneas deberían funcionar si dialogflow_request se parseó correctamente
     query_result = dialogflow_request.query_result
     user_query = query_result.query_text
     parameters = query_result.parameters
@@ -67,8 +71,9 @@ def webhook():
         response_obj.fulfillment_text = text_content
 
     def add_fulfillment_message(response_obj, text_content):
-        # Dialogflow puede aceptar múltiples mensajes de texto en fulfillmentMessages
-        response_obj.fulfillment_messages.append(Message(text=Text(text=[text_content])))
+        # Utiliza el método add_text del objeto WebhookResponse para crear y añadir el mensaje de texto
+        # Esto es más robusto que importar directamente Message y Text si hay problemas de rutas
+        response_obj.fulfillment_messages.add(text=text_content)
         
     def add_custom_payload(response_obj, payload_dict):
         """
@@ -78,21 +83,25 @@ def webhook():
         """
         try:
             payload_struct = ParseDict(payload_dict, Struct())
-            response_obj.fulfillment_messages.append(Message(payload=payload_struct))
+            # Crea un nuevo mensaje y asigna el payload
+            new_message = dialogflow_response.fulfillment_messages.add()
+            new_message.payload.CopyFrom(payload_struct)
         except Exception as e:
             print(f"Error al crear el custom payload: {e}")
             add_fulfillment_message(response_obj, "Lo siento, hubo un problema al generar las opciones de menú.")
 
     def set_output_context(response_obj, session_path, context_name, lifespan_count=5):
         """Helper para establecer contextos de salida."""
-        response_obj.output_contexts.append(      
-            f"{session_path}/contexts/{context_name}"
+        response_obj.output_contexts.add( # Usa .add() en lugar de .append()
+            name=f"{session_path}/contexts/{context_name}",
+            lifespan_count=lifespan_count # lifespan_count se establece aquí directamente
         )
 
     def clear_output_context(response_obj, session_path, context_name):
         """Helper para limpiar contextos de salida."""
-        response_obj.output_contexts.append(
-            f"{session_path}/contexts/{context_name}?lifespan_count=0"
+        response_obj.output_contexts.add( # Usa .add() para añadir un contexto con lifespan 0
+            name=f"{session_path}/contexts/{context_name}",
+            lifespan_count=0
         )
 
     def welcome():
@@ -169,7 +178,7 @@ def webhook():
 
     def ask_ai_agent_handler():
         """Maneja el Intent para solicitar una pregunta al agente IA."""
-        print("Intent 'Ask AI Agent Trigger' activado.")
+        print("Intent 'Ask AI Agent' activado.")
         set_fulfillment_text(dialogflow_response, "Claro, por favor, dime tu pregunta para el agente de IA.")
         # Limpia el contexto del menú de opciones de glamping
         clear_output_context(dialogflow_response, dialogflow_request.session, "glamping_options_menu_active")
@@ -204,7 +213,7 @@ def webhook():
 
     # -- Función ASÍNCRONA para Llamar a la API del Agente IA (FLASK) ---
     async def langchain_agent():
-        print(f"Intent para Agente LangChain activado. Pregunta del usuario: \"{user_query}\"")
+        print(f"Intent para Agente LangChain activado. Pregunta del Usuario: \"{user_query}\"")
         dialogflow_parameters_dic = dict(parameters)  # Convierte los parámetros a un diccionario normal
         print("Parámetros de Dialogflow (para API externa):", json.dumps(dialogflow_parameters_dic, indent=2))
 
@@ -257,7 +266,7 @@ def webhook():
         'decirHola': decir_hola,
         'Primer Menu': main_menu_handler,
         'Glamping Options Menu': glamping_options_menu_handler,
-        'Ask AI Agent Trigger': ask_ai_agent_handler,
+        'Ask AI Agent': ask_ai_agent_handler,
         'EmailNotification_Intent': email_notification_handler,
         'SendToWeb_Intent': send_to_web_handler,
         'langchainAgent': langchain_agent
