@@ -12,7 +12,7 @@ from google.cloud.dialogflow_v2.types import WebhookRequest, WebhookResponse
 
 # Struct sigue siendo necesario para los custom payloads
 from google.protobuf.json_format import ParseDict, MessageToJson
-from google.protobuf.struct_pb2 import Struct 
+from google.protobuf.struct_pb2 import Struct
 
 # Carga las variables de entorno desde el archivo .env
 load_dotenv()
