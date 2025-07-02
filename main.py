@@ -18,11 +18,12 @@ from google.protobuf.struct_pb2 import Struct
 load_dotenv()
 
 app = Flask(__name__)
-port = os.getenv('PORT', 8080) # Usa PORT desde .env o por defecto 8080
+port = os.getenv('PORT', '8080') # Usa PORT desde .env o por defecto 8080
 
 # Obtiene la URL de la API de Flask API desde las variables de entorno
 FLASK_API_URL = os.getenv('FLASK_LANGCHAIN_API_URL')
 print(f"Webhook configurado para llamar a la API de FLASK en: {FLASK_API_URL}")
+
 
 # --- Ruta raíz para servir index.html ---
 @app.route('/', methods=['GET'])
@@ -73,7 +74,8 @@ def webhook():
     def add_fulfillment_message(response_obj, text_content):
         # Utiliza el método add_text del objeto WebhookResponse para crear y añadir el mensaje de texto
         # Esto es más robusto que importar directamente Message y Text si hay problemas de rutas
-        response_obj.fulfillment_messages.add(text=text_content)
+        message = response_obj.fulfillment_messages.add()
+        message.text.text.append(text_content)
         
     def add_custom_payload(response_obj, payload_dict):
         """
@@ -92,17 +94,15 @@ def webhook():
 
     def set_output_context(response_obj, session_path, context_name, lifespan_count=5):
         """Helper para establecer contextos de salida."""
-        response_obj.output_contexts.add( # Usa .add() en lugar de .append()
-            name=f"{session_path}/contexts/{context_name}",
-            lifespan_count=lifespan_count # lifespan_count se establece aquí directamente
-        )
+        context = response_obj.output_contexts.add()
+        context.name = f"{session_path}/contexts/{context_name}"
+        context.lifespan_count = lifespan_count
 
     def clear_output_context(response_obj, session_path, context_name):
         """Helper para limpiar contextos de salida."""
-        response_obj.output_contexts.add( # Usa .add() para añadir un contexto con lifespan 0
-            name=f"{session_path}/contexts/{context_name}",
-            lifespan_count=0
-        )
+        context = response_obj.output_contexts.add()
+        context.name = f"{session_path}/contexts/{context_name}"
+        context.lifespan_count = 0
 
     def welcome():
         print("Intent 'Default Welcome Intent' activado.")
@@ -143,7 +143,7 @@ def webhook():
     def main_menu_handler():
         """Maneja el Intent 'Main Menu' para mostrar el menú principal."""
         print("Intent 'Main Menu' activado.")
-        set_fulfillment_text(dialogflow_response, "¡Hola! ¿En qué puedo ayudarte hoy?")
+        set_fulfillment_text(dialogflow_response, "¡Hola! ¿En qué puedo ayudarte hoy?\n\n¿Qué te gustaría hacer?")
         add_custom_payload(dialogflow_response, {
             "facebook": {
                 "text": "¿Qué te gustaría hacer?",
@@ -289,6 +289,7 @@ def webhook():
 
 # --- Inicia el servidor de Flask ---
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=(port), debug=True)
-    print(f"Servidor Flask corriendo en http://localhost:{port}")
-    print(f"URL del Agente IA Externo: {FLASK_API_URL}")
+    app.run(host='0.0.0.0', port=int(port), debug=True)
+
+print(f"URL del Agente IA Externo: {FLASK_API_URL}")
+print(f"Servidor Flask corriendo en http://localhost:{port}")
