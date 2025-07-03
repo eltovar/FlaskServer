@@ -152,15 +152,15 @@ def webhook():
         'Ask AI Agent': ask_ai_agent_handler,
         'langchainAgent': langchain_agent
     }
-
+    
     # Ejecutar el manejador correspondiente
     handler = intent_map.get(intent_display_name)
     if handler:
         handler()
     else:
-        print(f"No se encontró manejador para: {intent_display_name}")
-        set_fulfillment_text("Lo siento, no entiendo lo que quieres decir.")
-
+        print(f"⚠️  INTENT NO ENCONTRADO: '{intent_display_name}'")
+        print(f"📋 Intents disponibles: {list(intent_map.keys())}")
+        set_fulfillment_text(f"Debug: Intent recibido '{intent_display_name}' no está en el mapeo.")
     return jsonify(response)
 
 # --- Inicia el servidor de Flask ---
